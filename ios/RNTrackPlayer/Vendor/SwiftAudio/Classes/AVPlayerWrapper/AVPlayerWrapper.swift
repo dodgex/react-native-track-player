@@ -211,6 +211,9 @@ class AVPlayerWrapper: AVPlayerWrapperProtocol {
                             self.playerObserver.startObserving()
                             self.playerItemNotificationObserver.startObserving(item: currentItem)
                             self.playerItemObserver.startObserving(item: currentItem)
+                            for format in pendingAsset.availableMetadataFormats {
+                                self.delegate?.AVWrapper(didReceiveMetadata: pendingAsset.metadata(forFormat: format))
+                            }
                         }
                         break
                         
@@ -343,5 +346,8 @@ extension AVPlayerWrapper: AVPlayerItemObserverDelegate {
     func item(didUpdateDuration duration: Double) {
         self.delegate?.AVWrapper(didUpdateDuration: duration)
     }
-    
+
+    func item(didReceiveMetadata metadata: [AVMetadataItem]) {
+        self.delegate?.AVWrapper(didReceiveMetadata: metadata)
+    }
 }
