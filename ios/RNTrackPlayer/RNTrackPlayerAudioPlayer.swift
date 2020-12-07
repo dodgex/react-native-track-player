@@ -80,6 +80,12 @@ public class RNTrackPlayerAudioPlayer: QueuedAudioPlayer {
 		self.reactEventEmitter.sendEvent(withName: "playback-state", body: ["state": state.rawValue])
     }
 
+    override func AVWrapper(secondsElapsed seconds: Double) {
+        super.AVWrapper(secondsElapsed: seconds)
+
+        self.reactEventEmitter.sendEvent(withName: "playback-timer-tick", body: ["time": seconds])
+    }
+
     override func AVWrapper(didReceiveMetadata metadata: [AVMetadataItem]) {
         func getMetadataItem(forIdentifier:AVMetadataIdentifier) -> String {
             return AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: forIdentifier).first?.stringValue ?? ""
