@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.media.session.PlaybackStateCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.media.session.MediaButtonReceiver;
@@ -16,12 +17,15 @@ import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.jstasks.HeadlessJsTaskConfig;
 import com.guichaguri.trackplayer.service.Utils;
+import com.guichaguri.trackplayer.module.MusicEvents;
 import javax.annotation.Nullable;
 
 /**
  * @author Guichaguri
  */
 public class MusicService extends HeadlessJsTaskService {
+
+    private Runnable tickTimerRunnable = null;
 
     MusicManager manager;
     Handler handler;
@@ -44,6 +48,39 @@ public class MusicService extends HeadlessJsTaskService {
         if(data != null) intent.putExtra("data", data);
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    public synchronized void toggleTimerTick(int state) {
+        switch (state) {
+            case PlaybackStateCompat.STATE_PLAYING:
+                if (tickTimerRunnable == null) {
+                    tickTimerRunnable = new Runnable() {
+                        final long start = System.currentTimeMillis() / 1000;
+
+                        @Override
+                        public void run() {
+                            long now = System.currentTimeMillis() / 1000;
+
+                            Bundle bundle = new Bundle();
+                            bundle.putLong("time", now - start);
+                            emit(MusicEvents.PLAYBACK_TIMER_TICK, bundle);
+
+                            handler.postDelayed(tickTimerRunnable, 1000);
+                        }
+                    };
+                    tickTimerRunnable.run();
+                }
+                break;
+
+            case PlaybackStateCompat.STATE_NONE:
+            case PlaybackStateCompat.STATE_PAUSED:
+            case PlaybackStateCompat.STATE_STOPPED:
+                if (tickTimerRunnable != null) {
+                    handler.removeCallbacks(tickTimerRunnable);
+                    tickTimerRunnable = null;
+                }
+                break;
+        }
     }
 
     public void destroy() {
